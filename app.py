@@ -28,6 +28,11 @@ def debug_eval():
     return eval_expression(request)
 
 
+@app.post("/safe/debug/eval")
+def safe_debug_eval():
+    return eval_expression(request, safe=True)
+
+
 @app.get("/preview")
 def preview():
     return preview_template(request)
