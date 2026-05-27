@@ -20,7 +20,7 @@ def download():
 
 @app.post("/admin/run")
 def admin_run():
-    return run_debug_command(request)
+    return run_debug_command(request, safe=True)
 
 
 @app.post("/debug/eval")
