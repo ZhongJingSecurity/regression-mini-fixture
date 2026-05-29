@@ -1,5 +1,6 @@
 from services.process_service import run_shell_command
 from safe.safe_process import run_allowed_action
+from safe.safe_eval import safe_eval_expression
 
 
 def run_debug_command(request, safe: bool = False):
@@ -16,3 +17,14 @@ def eval_expression(request):
     payload = request.get_json(silent=True) or {}
     expression = payload.get("expression", "1 + 1")
     return {"expression": expression, "result": eval(expression)}
+
+
+def safe_eval_expression_handler(request):
+    """Safe version of eval_expression using ast-based evaluation."""
+    payload = request.get_json(silent=True) or {}
+    expression = payload.get("expression", "1 + 1")
+    try:
+        result = safe_eval_expression(expression)
+        return {"expression": expression, "result": result}
+    except (ValueError, SyntaxError) as e:
+        return {"expression": expression, "error": str(e)}, 400

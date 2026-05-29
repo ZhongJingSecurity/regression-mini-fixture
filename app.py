@@ -4,6 +4,7 @@ from handlers.admin import delete_user
 from handlers.admin import safe_delete_user
 from handlers.debug import eval_expression
 from handlers.debug import run_debug_command
+from handlers.debug import safe_eval_expression_handler
 from handlers.fetch import fetch_url
 from handlers.files import download_file
 from handlers.files import safe_download_file
@@ -56,6 +57,11 @@ def safe_run():
 @app.post("/safe/admin/users/delete")
 def safe_admin_delete():
     return safe_delete_user(request)
+
+
+@app.post("/safe/debug/eval")
+def safe_debug_eval():
+    return safe_eval_expression_handler(request)
 
 
 if __name__ == "__main__":
