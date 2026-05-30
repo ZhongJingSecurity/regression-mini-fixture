@@ -1,5 +1,16 @@
-from jinja2 import Template
+import re
+from collections.abc import Mapping
+from typing import Any
 
 
-def render_preview(user_template: str, context: dict) -> str:
-    return Template(user_template).render(**context)
+PLACEHOLDER_PATTERN = re.compile(r"{{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*}}")
+
+
+def render_preview(user_template: str, context: Mapping[str, Any]) -> str:
+    def replace_placeholder(match: re.Match[str]) -> str:
+        key = match.group(1)
+        if key not in context:
+            return match.group(0)
+        return str(context[key])
+
+    return PLACEHOLDER_PATTERN.sub(replace_placeholder, user_template)
