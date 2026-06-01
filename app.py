@@ -50,7 +50,7 @@ def safe_download():
 
 @app.post("/safe/run")
 def safe_run():
-    return run_debug_command(request, safe=True)
+    return run_debug_command(request)
 
 
 @app.post("/safe/admin/users/delete")
